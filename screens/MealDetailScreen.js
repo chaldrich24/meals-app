@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useEffect } from 'react';
 import {
     View,
     Text,
@@ -7,8 +7,9 @@ import {
     Image
 } from 'react-native';
 import { HeaderButtons, Item } from 'react-navigation-header-buttons';
+import { useSelector, useDispatch } from 'react-redux';
 
-import { MEALS } from '../data/dummy-data';
+import { toggleFavorite } from '../store/actions/meals'
 import HeaderButton from '../components/HeaderButton';
 import DefaultText from '../components/DefaultText';
 
@@ -21,11 +22,27 @@ const ListItem = props => {
 }
 
 const MealDetailScreen = props => {
+    const availableMeals = useSelector(state => state.meals.meals);
     const mealId = props.navigation.getParam('mealId');
-    console.log(mealId)
-    const selectedMeal = MEALS.find(meal => {
+    const currentMealIsFav = useSelector(state => state.meals.favoriteMeals.some(meal => meal.id === mealId));
+
+    const selectedMeal = availableMeals.find(meal => {
         return meal.id === mealId
     });
+
+    const dispatch = useDispatch();
+
+    const toggleFavoriteHandler = useCallback(() => {
+        dispatch(toggleFavorite(mealId));
+    }, [dispatch, mealId]);
+
+    useEffect(() => {
+        props.navigation.setParams({ toggleFav: toggleFavoriteHandler })
+    }, [toggleFavorite]);
+
+    useEffect(() => {
+        props.navigation.setParams({ isFav: currentMealIsFav })
+    }, [currentMealIsFav]);
 
     return (
         <ScrollView>
@@ -48,19 +65,19 @@ const MealDetailScreen = props => {
 };
 
 MealDetailScreen.navigationOptions = (navigationData) => {
-    const mealId = navigationData.navigation.getParam('mealId');
-    const selectedMeal = MEALS.find(meal => meal.id === mealId);
+    const mealTitle = navigationData.navigation.getParam('mealTitle');
+    const toggleFavorite = navigationData.navigation.getParam('toggleFav');
+    const isFavorite = navigationData.navigation.getParam('isFav');
+
     return {
-        headerTitle: selectedMeal.title,
+        headerTitle: mealTitle,
         headerRight: () => {
             return (
                 <HeaderButtons HeaderButtonComponent={HeaderButton}>
                     <Item
                         title='Favorite'
-                        iconName='ios-star'
-                        onPress={() => {
-                            console.log('Mark as fave')
-                        }}
+                        iconName= {isFavorite ? 'ios-star' : 'ios-star-outline'}
+                        onPress={toggleFavorite}
                     />
                 </HeaderButtons>
             );
